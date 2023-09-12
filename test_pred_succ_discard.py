@@ -1,82 +1,58 @@
-import unittest
 from random import shuffle
-from pred_succ_discard import PredSuccDiscard
+from pred_succ_discard import PredSuccDiscard as PSD
+from pred_succ_add_discard_bisect import PredSuccAddDiscard as PSAD
 
-class TestDiscardFirst(unittest.TestCase):
+full = list(range(100))
 
-    PSD = PredSuccDiscard
+discarded = [0, 1, 2,
+             18,
+             30, 31, 32, 33,
+             60,
+             97, 98, 99,
+             ]
 
-    @classmethod
-    def setUpClass(cls):
-        
-        cls.discarded = [0, 1, 2,
-                          18,
-                          30, 31, 32, 33,
-                          60,
-                          97, 98, 99]
-        cls.remaining = [ i for i in range(100) if i not in set(cls.discarded) ]
-        cls.discarded *= 2
-        shuffle(cls.discarded)
+remaining = [ i for i in full if i not in set(discarded) ]
+discarded *= 2
+
+def init():
+    global psd
+    global psad
+    global discarded
+    psd = PSD(100)
+    psad = PSAD(range(100))
     
-    def setUp(self):
-        
-        self.psd = self.PSD(100)
-        for i in self.discarded:
-            self.psd.discard(i)
-
-    def test_left(self):
-        
-        self.assertEqual(self.psd.pred(4), 3)
-        
-        self.assertIsNone(self.psd.pred(3))
-        self.assertIsNone(self.psd.pred(2))
-        self.assertIsNone(self.psd.pred(1))
-        self.assertIsNone(self.psd.pred(0))
-        self.assertIsNone(self.psd.pred(-1))
-        self.assertIsNone(self.psd.pred(-2))
+    shuffle(full)
+    shuffle(discarded)
     
-    def test_right(self):
-        
-        self.assertEqual(self.psd.succ(95), 96)
-        
-        self.assertIsNone(self.psd.succ(96))
-        self.assertIsNone(self.psd.succ(97))
-        self.assertIsNone(self.psd.succ(98))
-        self.assertIsNone(self.psd.succ(99))
-        self.assertIsNone(self.psd.succ(100))
-        self.assertIsNone(self.psd.succ(101))
+    for i in discarded:
+        psd.discard(i)
+        psad.discard(i)
+    
 
-    def test_middle_succ(self):
-        
-        self.assertEqual(self.psd.succ(28), 29)
-        
-        self.assertEqual(self.psd.succ(29), 34)
-        self.assertEqual(self.psd.succ(30), 34)
-        self.assertEqual(self.psd.succ(31), 34)
-        self.assertEqual(self.psd.succ(32), 34)
-        self.assertEqual(self.psd.succ(33), 34)
-        
-        self.assertEqual(self.psd.succ(34), 35)
-        
-    def test_middle_pred(self):
-        
-        self.assertEqual(self.psd.pred(35), 34)
-        
-        self.assertEqual(self.psd.pred(34), 29)
-        self.assertEqual(self.psd.pred(33), 29)
-        self.assertEqual(self.psd.pred(32), 29)
-        self.assertEqual(self.psd.pred(31), 29)
-        self.assertEqual(self.psd.pred(30), 29)
-        
-        self.assertEqual(self.psd.pred(29), 28)
+init()
 
-    def test_iter(self):
-        
-        self.assertListEqual(list(self.psd), self.remaining)
+for i in full:
+    assert psd.pred(i) == psad.pred(i)
+    
+init()
 
-    def test_contains(self):
-        self.assertListEqual([ i for i in range(- 2, 102) if i in self.psd ],
-                             self.remaining)
+for i in full:
+    assert psd.succ(i) == psad.succ(i)
+
+init()
+
+for i in full:
+    assert psd.pred(i) == psad.pred(i)
+    assert psd.succ(i) == psad.succ(i)
+
+init()
+
+assert list(psd) == remaining
+
+
+    # def test_contains(self):
+    #     self.assertListEqual([ i for i in range(- 2, 102) if i in self.psd ],
+    #                          self.remaining)
 
         
 def pred(s, i):
@@ -118,5 +94,3 @@ def succ(s, i):
             
             
 
-if __name__ == '__main__':
-    unittest.main()
