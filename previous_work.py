@@ -1,13 +1,27 @@
 from box import Box
-from collections import namedtuple
 from functools import total_ordering
-from heapq import heappush, heappop
-from infinity_factory import infinity_factory
 
-    
+from heapq import heappush, heappop
+from collections import namedtuple
+
+from infinity_factory import infinity_factory
+from sort_utils import merge_iterables
+
+
 def boxes_from_edges_and_heights(edges, heights, *, negative_infinity):
+    """
+    >>> boxes_from_edges_and_heights(list(range(10)), # doctest: +NORMALIZE_WHITESPACE
+    ... [- 1, 8, 8, 5, - 1, - 1, 7, 9, 6, - 1],
+    ... negative_infinity = - 1) 
+    [Box(left=1, height=8, right=3),
+     Box(left=3, height=5, right=4),
+     Box(left=6, height=7, right=7),
+     Box(left=7, height=9, right=8),
+     Box(left=8, height=6, right=9)]
+    """    
     
-    assert len(edges) == len(heights) # debug
+    assert len(edges) == len(heights), \
+        "The list of edges and the list of heights are of different lengths."
     
     if not edges:
         return []
@@ -16,12 +30,56 @@ def boxes_from_edges_and_heights(edges, heights, *, negative_infinity):
     l = edges[0]
     h = heights[0]
     for i in range(1, len(edges)):
+
+        assert edges[i - 1] <= edges[i], \
+            "Edges are not sorted." #
+        assert edges[i - 1] != edges[i] or heights[i - 1] == heights[i], \
+            "Height inconsistencies." #
+        
         if heights[i] != h:
             if negative_infinity != h:
                 result.append(Box(l, h, edges[i]))
             l = edges[i]
-            h = heights[i]            
+            h = heights[i]
+
+    assert negative_infinity == h, "The skyline extends indefinitely to the right."
     return result
+
+
+def edges_and_heights_from_boxes(boxes, *, negative_infinity):
+    """
+    >>> edges_and_heights_from_boxes([Box(1, 10, 3), Box(3, 10, 4), Box(5, 10, 6), Box(6, 11, 7)],
+    ... negative_infinity = -1)
+    ([1, 4, 5, 6, 7], [10, -1, 10, 11, -1])
+    """
+    
+    if not boxes:
+        return []
+    
+    edges = [boxes[0].left]
+    heights = [boxes[0].height]
+    
+    for i in range(1, len(boxes)):
+
+        assert boxes[i - 1].right <= boxes[i].left, "Some boxes intersect."
+        
+        if boxes[i - 1].right < boxes[i].left:
+            edges.append(boxes[i - 1].right)
+            heights.append(negative_infinity)
+        elif boxes[i - 1].height == boxes[i].height:
+            continue
+        
+        edges.append(boxes[i].left)
+        heights.append(boxes[i].height)
+
+    edges.append(boxes[-1].right)
+    heights.append(negative_infinity)
+
+    return edges, heights
+    
+        
+        
+
     
 
 def skyline_quadratic(boxes):
@@ -42,40 +100,9 @@ def skyline_quadratic(boxes):
 
 
 
-def merge_sorted(it1, it2, /, *, key = lambda x: x):
-    it1 = iter(it1)
-    it2 = iter(it2)
-    try:
-        x1 = next(it1)
-    except StopIteration:
-        yield from it2
-        return
-    try:
-        x2 = next(it2)
-    except StopIteration:
-        yield x1
-        yield from it1
-        return
-    k1 = key(x1)
-    k2 = key(x2)
-    while True:
-        if k1 <= k2:
-            yield x1
-            try:
-                x1 = next(it1)
-            except StopIteration:
-                yield x2
-                yield from it2
-                return
-            k1 = key(x1)
-        else:
-            k1, k2 = k2, k1
-            x1, x2 = x2, x1
-            it1, it2 = it2, it1
-
             
 def merge_skylines(sl1, sl2):
-    it = merge_sorted(sl1, sl2, key = lambda b: b.left)
+    it = merge_iterables(sl1, sl2, key = lambda b: b.left)
     result = []
     
     try: 
@@ -109,7 +136,7 @@ class MaxHeapItem(namedtuple("_RawHeapItem", ["key", "value"])):
         return self.key > other.key # no bug !!!
    
       
-def skyline_right(boxes):
+def skyline_heapq(boxes):
 
     boxes = list(boxes)
 
@@ -146,15 +173,14 @@ def skyline_right(boxes):
                      
         
 
-if __name__ == "__main__":
-    from json import load
-    test_set = load(open("test-skyline.json"))
-    for name in test_set:
-        boxes = test_set[name] = [ Box(*b) for b in test_set[name] ]
-        assert skyline_quadratic(boxes) == skyline_DAC(boxes) == skyline_right(boxes)
-        # print(skyline_quadratic(boxes) == skyline_DAC(boxes) == skyline_right(boxes), name)
 
         
+    # print(edges_and_heights_from_boxes([Box(1, 10, 3),
+    #                                     Box(3, 10, 12),
+    #                                     Box(13, 15, 14),
+    #                                     Box(14, 20, 15),
+    #                                     Box(15, 15, 16)],
+    #                                    negative_infinity = 0))
     
         
                     
