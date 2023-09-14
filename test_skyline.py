@@ -1,6 +1,8 @@
 from box import Box
 from previous_work import skyline_quadratic, skyline_DAC, skyline_heapq
 from skyline_union_find import skyline_union_find
+from decreasing_steps import skyline_steps
+from sort_utils import merge_iterables
 
 test_set = {
     "consecutive":
@@ -30,22 +32,54 @@ test_set = {
     }
 
 decreasing_steps = [ [0, 21, 4], [4, 17, 11], [11, 12, 12], [12, 9, 16], [16, 5, 21], [21, 3, 24], [24, 1, 30] ]
+add_to_decreasing = [
+    [ 5, 2, 22 ], # hidden
+    [ 17, 18, 20 ], # protruding 
+    [ 4, 17, 24 ], # replaces 5 steps
+    [ 5, 18, 23 ], # overlaps 5 steps
+    [ 31, 5, 40 ], # far from the stair
+    [ 1, 11, 13 ], # inserts one step
+    [ 4, 17, 17 ],
+    [ 5, 27, 21 ],
+    [ 12, 10, 16 ], 
+    ]
 
-for name in test_set:
-    boxes = test_set[name] = [ Box(*b) for b in test_set[name] ]
+
+def print_boxes(boxes):
+    j = 0    
+    for i in range(boxes[0].left, boxes[-1].right):
+        while j < len(boxes) and boxes[j].right <= i:
+            j += 1
+        if boxes[j].left <= i:
+            print(i, "X" * boxes[j].height)
+        else:
+            print(i, "O")
+
+def test_boxes(boxes, msg):
+    boxes = tuple(boxes)
     if skyline_quadratic(boxes) \
         == skyline_DAC(boxes) \
         == skyline_heapq(boxes) \
-        == skyline_union_find(boxes):            
-        print("OK", name)
+        == skyline_union_find(boxes) \
+        == skyline_steps(boxes):
+        print("OK", msg)
     else:
-        print("ERROR", name)
+        print("ERROR", msg)
+    
 
+for name in test_set:
+    boxes = test_set[name] = [ Box(*b) for b in test_set[name] ]
+    test_boxes(boxes, name)
+    
+decreasing_steps = [ Box(*b) for b in decreasing_steps ]
+
+for t in add_to_decreasing:
+    b = Box(*t)
+    boxes = merge_iterables(decreasing_steps, [b], key = lambda b: b.left)
+    test_boxes(boxes, b)
 
     
 
-    # print(name)
-    # print(skyline_DAC(boxes))
-    # print(skyline_union_find(boxes))
+
+
     
-    # print(skyline_quadratic(boxes) == skyline_DAC(boxes) == skyline_right(boxes), name)
