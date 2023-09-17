@@ -66,3 +66,44 @@ def counting_sort(iterable, /, *, key = lambda x: x):
         res[cts[k]] = e
 
     return res
+
+
+
+from functools import total_ordering
+
+class MaxHeap:
+
+    @total_ordering
+    class MaxHeapItem:
+
+        def __init__(self, key, value):
+            self.key = key
+            self.value = value 
+
+        # python's heapq module deals with binary MIN-heaps.
+        # Since we need a MAX-heap, some inequalities need to be reversed 
+
+        def __lt__(self, other):
+            return self.key > other.key  # no bug !!!
+        
+        
+    def __init__(self, data = None, key = lambda x: x):
+        if data is None:
+            self.data = []
+        else:
+            self.data = [ self.MaxHeapItem(key = key(value), value = value) for value in data ]
+            heapify(self.data)
+            
+        self._key_fct = key
+
+    def __len__(self):
+        return len(self.data)
+
+    def peek_max(self):
+        return self.data[0].value 
+
+    def pop_max(self):
+        return heappop(self.data).value
+
+    def push(self, value):
+        heappush(self.data, self.MaxHeapItem(key = self._key_fct(value), value = value))

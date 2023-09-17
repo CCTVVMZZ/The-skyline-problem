@@ -1,49 +1,10 @@
-from functools import total_ordering
 from heapq import heappush, heappop, heapify
-from collections import namedtuple
 from previous_work import boxes_from_edges_and_heights
-from infinity_factory import infinity_factory
+from van_emde_boas import VanEmdeBoasTree  
+from sort_utils import MaxHeap
 
-    
-class MaxHeap:
 
-    @total_ordering
-    class MaxHeapItem(namedtuple("_RawHeapItem", ["key", "value"])):
 
-        # python's heapq module deals with binary MIN-heaps.
-        # Since we need a MAX-heap, some inequalities need to be reversed 
-
-        def __lt__(self, other):
-            return self.key > other.key  # no bug !!!
-        
-    def __init__(self, data = None, key = lambda x: x):
-        if data is None:
-            self.data = []
-        else:
-            self.data = [ self.MaxHeapItem(key = key(value), value = value) for value in data ]
-            heapify(self.data)
-            
-        self.key = key
-
-    def __len__(self):
-        return len(self.data)
-
-    def peek_max(self):
-        return self.data[0].value 
-
-    def pop_max(self):
-        return heappop(self.data).value
-
-    def push(self, value):
-        heappush(self.data, self.MaxHeapItem(key = self.key(value), value = value))
-
-h = MaxHeap([3, 7, 1])
-h.push(5)
-print(h.pop_max())
-print(h.peek_max())
-print(h.pop_max())
-print(h.pop_max())
-print(h.pop_max())
 
 class DecreasingSteps_heapq:
 
@@ -83,6 +44,41 @@ class DecreasingSteps_heapq:
     def add(self, x, y):
         self.data.push((x, y))
 
+        
+class DecreasingSteps_vEB:
+
+    def __init__(self, u):
+
+        self.vEB = VanEmdeBoasTree(u.bit_length())
+        self.ys = [ None ] * u  # None is used as a placeholder
+
+    def __bool__(self):
+        return bool(self.vEB)
+
+    def get_top(self):
+        x = self.vEB.min
+        return x, self.ys[x]
+
+    def pop_top(self):
+        top = self.get_top()
+        self.vEB.discard(top[0])
+        return top        
+
+    def add(self, x, y):
+        vEB = self.vEB
+        ys = self.ys
+        if x in vEB and y <= ys[x]:
+            return
+        s = vEB.succ(x)
+        if s is not None and ys[s] >= y:
+            return    
+        p = vEB.pred(x)
+        while p is not None and ys[p] <= y:
+            vEB.discard(p)
+            p = vEB.pred(p)
+        ys[x] = y
+        vEB.add(x)
+
 def skyline_steps(boxes):
 
     boxes = list(boxes)
@@ -94,7 +90,7 @@ def skyline_steps(boxes):
     
     neg_inf = object()
     
-    steps = DecreasingSteps_heapq()
+    steps = DecreasingSteps_vEB( 1 +  max ( b.right for b in boxes ) )
     i = 0
     edges = []
     heights = []
@@ -136,20 +132,25 @@ def skyline_steps(boxes):
 # test = [ Box(*b) for b in test ]
 # #print(skyline_steps(test))
 
-# d = decreasing_steps_heapq()
-# d.add(0, 1090)
-# d.add(1, 1080)
-# d.add(2, 1070)
-# d.add(3, 1060)
+# d = DecreasingSteps_vEB(12)
+# # d.add(0, 1090)
+# # d.add(1, 1080)
+# # d.add(2, 1070)
+# # d.add(3, 1060)
 # d.add(4, 1050)
 # d.add(4, 1075)
-# d.add(5, 1040)
-# d.add(6, 1030)
+# d.add(6, 2001)
+# d.add(5, 2000)
 
+# # d.add(5, 1040)
+# # d.add(6, 1030)
+
+# # print(d.pop_top())
+# # print(d.pop_top())
+# # print(d.pop_top())
 # print(d.pop_top())
-# print(d.pop_top())
-# print(d.pop_top())
-# print(d.pop_top())
-# print(d.pop_top())
+# #print(d.pop_top())
+
+
 
 
